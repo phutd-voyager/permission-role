@@ -16,6 +16,10 @@ class RoleMiddleware
 
     public function handle($request, Closure $next, $role)
     {
+        if (config('permission-role.enable_middleware') === false) {
+            return $next($request);
+        }
+
         if ($this->userRoleService->hasRole($role)) {
             return $next($request);
         }
