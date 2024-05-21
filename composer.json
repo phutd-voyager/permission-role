@@ -1,0 +1,42 @@
+{
+    "name": "voyager-inc/permission-role",
+    "description": "Permission role",
+    "type": "library",
+    "keywords": ["permission-role", "voyager-inc"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Phu Tran Dinh",
+            "email": "phutd@voyager-hcm.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4|^5|^6|^7|^8|^9"
+    },
+    "autoload": {
+        "psr-4": {
+            "VoyagerInc\\PermissionRole\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "VoyagerInc\\PermissionRole\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "VoyagerInc\\PermissionRole\\ServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": false
+}
