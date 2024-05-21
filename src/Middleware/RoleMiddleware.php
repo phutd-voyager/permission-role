@@ -4,6 +4,7 @@ namespace VoyagerInc\PermissionRole\Middleware;
 
 use Closure;
 use VoyagerInc\PermissionRole\Services\Contracts\UserRoleServiceInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
 {
@@ -20,10 +21,14 @@ class RoleMiddleware
             return $next($request);
         }
 
+        if (empty($role)) {
+            return response()->json(['error' => 'Unauthorized'], Response::HTTP_FORBIDDEN);
+        }
+
         if ($this->userRoleService->hasRole($role)) {
             return $next($request);
         }
 
-        return response()->json(['error' => 'Unauthorized'], 403);
+        return response()->json(['error' => 'Unauthorized'], Response::HTTP_FORBIDDEN);
     }
 }
