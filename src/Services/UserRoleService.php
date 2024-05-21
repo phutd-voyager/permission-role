@@ -2,7 +2,7 @@
 
 namespace VoyagerInc\PermissionRole\Services;
 
-class UserRoleService
+class UserRoleService implements Contracts\UserRoleServiceInterface
 {
     public function getUserRole($user)
     {

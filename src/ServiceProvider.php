@@ -11,9 +11,20 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        $this->publishes([
+            __DIR__ . '/config/permission-role.php' => config_path('permission-role.php'),
+            __DIR__ . '/database/migrations/' => database_path('migrations'),
+        ], 'permission-role');
 
         $this->registerMiddleware();
+
+        if (!$this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->commands([
+            Console\InstallExampleCommand::class,
+        ]);
     }
 
     protected function registerMiddleware()
