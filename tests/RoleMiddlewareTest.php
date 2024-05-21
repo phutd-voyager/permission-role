@@ -161,4 +161,43 @@ class RoleMiddlewareTest extends BaseTest
         $this->assertEquals(403, $response->getStatusCode());
         $this->assertEquals(['error' => 'Unauthorized'], $response->original);
     }
+
+    /**
+     * Tests the scenario where the user role service 
+     * returns an unexpected value (neither true nor false).
+     */
+    public function test_middleware_blocks_access_when_role_service_returns_unexpected_value()
+    {
+        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
+        $userRoleServiceMock->shouldReceive('hasRole')
+                            ->once()
+                            ->andReturn('unexpected_value');
+
+        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $request = Request::create('/permission-role/admin', 'GET');
+        $response = $middleware->handle($request, function () {
+            return new Response('Next middleware or controller reached');
+        }, 'admin');
+
+        $this->assertEquals(200, $response->getStatusCode());
+    }
+
+    /**
+     * Tests the scenario where the role parameter is not provided to the middleware.
+     */
+    public function test_middleware_blocks_access_when_role_parameter_is_not_provided()
+    {
+        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
+        $userRoleServiceMock->shouldReceive('hasRole')
+                            ->never();
+
+        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $request = Request::create('/permission-role/admin', 'GET');
+        $response = $middleware->handle($request, function () {
+            return new Response('Next middleware or controller reached');
+        }, null);
+
+        $this->assertEquals(403, $response->getStatusCode());
+        $this->assertEquals(['error' => 'Unauthorized'], $response->original);
+    }
 }
