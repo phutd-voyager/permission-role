@@ -37,5 +37,9 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->app->bind(Services\Contracts\UserRoleServiceInterface::class, function () {
             return new Services\UserRoleService();
         });
+
+        $this->app->bind(Services\Contracts\ConfigDataServiceInterface::class, function () {
+            return new Services\ConfigDataService();
+        });
     }
 }

@@ -5,14 +5,12 @@ namespace VoyagerInc\PermissionRole\Tests;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Mockery;
 use VoyagerInc\PermissionRole\Middleware\RoleMiddleware;
 use VoyagerInc\PermissionRole\Services\Contracts\UserRoleServiceInterface;
+use VoyagerInc\PermissionRole\Services\Contracts\ConfigDataServiceInterface;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 
-
-
-class RoleMiddlewareTest extends BaseTest 
+class RoleMiddlewareTest extends BaseTest
 {
     use RefreshDatabase;
     use MockeryPHPUnitIntegration;
@@ -24,27 +22,30 @@ class RoleMiddlewareTest extends BaseTest
     {
         parent::setUp();
 
-        $this->userRoleService = $this->mock(UserRoleServiceInterface::class);
-        $this->middleware = new RoleMiddleware($this->userRoleService);
+        $this->userRoleServiceMock = $this->mock(UserRoleServiceInterface::class);
+        $this->configDataServiceMock = $this->mock(ConfigDataServiceInterface::class);
+        $this->middlewareMock = new RoleMiddleware($this->userRoleServiceMock, $this->configDataServiceMock);
     }
-    
+
     /**
      * test checks that the middleware allows access 
      * when the user’s role matches the required role.
      */
     public function test_middleware_allows_access_when_role_matches()
     {
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
-        $userRoleServiceMock->shouldReceive('hasRole')
-                            ->once()
-                            ->with('admin')
-                            ->andReturn(true);
+        $this->userRoleServiceMock->shouldReceive('hasRole')
+            ->once()
+            ->with('admin')
+            ->andReturn(true);
 
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(true);
 
         $request = Request::create('/permission-role/admin', 'GET');
 
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, 'admin');
 
@@ -58,17 +59,19 @@ class RoleMiddlewareTest extends BaseTest
      */
     public function test_middleware_blocks_access_when_role_does_not_match()
     {
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
-        $userRoleServiceMock->shouldReceive('hasRole')
-                            ->once()
-                            ->with('admin')
-                            ->andReturn(false);
+        $this->userRoleServiceMock->shouldReceive('hasRole')
+            ->once()
+            ->with('admin')
+            ->andReturn(false);
 
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(true);
 
         $request = Request::create('/permission-role/admin', 'GET');
 
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, 'admin');
 
@@ -82,15 +85,14 @@ class RoleMiddlewareTest extends BaseTest
      */
     public function test_middleware_skips_check_when_disabled()
     {
-        config(['permission-role.enable_middleware' => false]);
-
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
-
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(false);
 
         $request = Request::create('/permission-role/admin', 'GET');
 
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, 'admin');
 
@@ -103,18 +105,19 @@ class RoleMiddlewareTest extends BaseTest
      */
     public function test_middleware_allows_access_with_multiple_roles()
     {
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
+        $this->userRoleServiceMock->shouldReceive('hasRole')
+            ->once()
+            ->with('admin|editor')
+            ->andReturn(true);
 
-        $userRoleServiceMock->shouldReceive('hasRole')
-                            ->once()
-                            ->with('admin|editor')
-                            ->andReturn(true);
-
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(true);
 
         $request = Request::create('/permission-role/admin-or-editor', 'GET');
 
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, 'admin|editor');
 
@@ -126,15 +129,17 @@ class RoleMiddlewareTest extends BaseTest
      */
     public function test_middleware_blocks_access_when_no_role_is_provided()
     {
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
-        $userRoleServiceMock->shouldReceive('hasRole')
-                            ->never();
+        $this->userRoleServiceMock->shouldReceive('hasRole')
+            ->never();
 
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(true);
 
         $request = Request::create('permission-role/no-role', 'GET');
 
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, '');
 
@@ -144,17 +149,19 @@ class RoleMiddlewareTest extends BaseTest
 
     public function test_middleware_blocks_access_when_user_has_no_role()
     {
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
-        $userRoleServiceMock->shouldReceive('hasRole')
-                            ->once()
-                            ->with('admin')
-                            ->andReturn(false);
+        $this->userRoleServiceMock->shouldReceive('hasRole')
+            ->once()
+            ->with('admin')
+            ->andReturn(false);
 
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(true);
 
         $request = Request::create('/admin', 'GET');
 
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, 'admin');
 
@@ -168,14 +175,17 @@ class RoleMiddlewareTest extends BaseTest
      */
     public function test_middleware_blocks_access_when_role_service_returns_unexpected_value()
     {
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
-        $userRoleServiceMock->shouldReceive('hasRole')
-                            ->once()
-                            ->andReturn('unexpected_value');
+        $this->userRoleServiceMock->shouldReceive('hasRole')
+            ->once()
+            ->andReturn('unexpected_value');
 
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(true);
+
         $request = Request::create('/permission-role/admin', 'GET');
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, 'admin');
 
@@ -187,13 +197,16 @@ class RoleMiddlewareTest extends BaseTest
      */
     public function test_middleware_blocks_access_when_role_parameter_is_not_provided()
     {
-        $userRoleServiceMock = Mockery::mock(UserRoleServiceInterface::class);
-        $userRoleServiceMock->shouldReceive('hasRole')
-                            ->never();
+        $this->userRoleServiceMock->shouldReceive('hasRole')
+            ->never();
 
-        $middleware = new RoleMiddleware($userRoleServiceMock);
+        $this->configDataServiceMock->shouldReceive('get')
+            ->once()
+            ->with('enable_middleware')
+            ->andReturn(true);
+
         $request = Request::create('/permission-role/admin', 'GET');
-        $response = $middleware->handle($request, function () {
+        $response = $this->middlewareMock->handle($request, function () {
             return new Response('Next middleware or controller reached');
         }, null);
 
