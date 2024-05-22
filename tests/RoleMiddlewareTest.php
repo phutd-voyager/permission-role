@@ -15,8 +15,9 @@ class RoleMiddlewareTest extends BaseTest
     use RefreshDatabase;
     use MockeryPHPUnitIntegration;
 
-    protected $userRoleService;
-    protected $middleware;
+    protected $userRoleServiceMock;
+    protected $middlewareMock;
+    protected $configDataServiceMock;
 
     protected function setUp(): void
     {
